@@ -14,7 +14,6 @@ use OCA\Sharing\Exception\ShareInvalidPropertiesException;
 use OCA\Sharing\Registry;
 use OCA\Sharing\ResponseDefinitions;
 use OCP\Server;
-use RuntimeException;
 
 /**
  * @psalm-import-type SharingShare from ResponseDefinitions
@@ -30,6 +29,8 @@ readonly class Share {
 		public array $recipients,
 		/** @var array<class-string<IShareFeature>, array<string, non-empty-list<string>>> */
 		public array $properties,
+		/** @var non-negative-int $lastUpdated Unix time in milliseconds */
+		public int $lastUpdated,
 	) {
 		// TODO: Some of these might need to be skipped when loading existing shares from the DB
 
@@ -143,16 +144,13 @@ readonly class Share {
 	 * @param SharingShare $share
 	 */
 	public static function fromArray(array $share): self {
-		if (!isset($share['id'])) {
-			throw new RuntimeException('The id is not set.');
-		}
-
 		return new self(
 			$share['id'],
 			new ShareOwner($share['owner']['user_id'], $share['owner']['display_name'] ?? null),
 			array_map(ShareSource::fromArray(...), $share['sources']),
 			array_map(ShareRecipient::fromArray(...), $share['recipients']),
 			$share['properties'],
+			$share['last_updated'],
 		);
 	}
 
@@ -171,6 +169,7 @@ readonly class Share {
 		return [
 			'id' => $this->id,
 			'owner' => $owner,
+			'last_updated' => $this->lastUpdated,
 			'sources' => array_map(static fn (ShareSource $source): array => $source->toArray(), $this->sources),
 			'recipients' => array_map(static fn (ShareRecipient $recipient): array => $recipient->toArray(), $this->recipients),
 			'properties' => $this->properties,

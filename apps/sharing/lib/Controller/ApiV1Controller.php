@@ -31,7 +31,6 @@ use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\OCSController;
 use OCP\IRequest;
 use OCP\IUserSession;
-use OCP\Snowflake\ISnowflakeGenerator;
 
 // TODO: Rate limit recipients during share create and update
 // TODO: Add federation
@@ -47,7 +46,6 @@ class ApiV1Controller extends OCSController {
 		IRequest $request,
 		private readonly IUserSession $userSession,
 		private readonly Manager $manager,
-		private readonly ISnowflakeGenerator $snowflakeGenerator,
 	) {
 		parent::__construct($appName, $request);
 	}
@@ -116,8 +114,7 @@ class ApiV1Controller extends OCSController {
 			return new DataResponse('Not logged in', Http::STATUS_UNAUTHORIZED);
 		}
 
-		$data['id'] = $this->snowflakeGenerator->nextId();
-		$share = Share::fromArray($data);
+		$share = Share::fromArray($this->manager->completePartialShareData($data));
 
 		try {
 			$this->manager->insert($share);

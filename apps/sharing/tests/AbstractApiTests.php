@@ -18,7 +18,6 @@ use OCA\Sharing\ResponseDefinitions;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\Server;
-use OCP\Snowflake\ISnowflakeGenerator;
 use PHPUnit\Framework\Attributes\Group;
 use Test\TestCase;
 
@@ -56,9 +55,8 @@ abstract class AbstractApiTests extends TestCase {
 	}
 
 	protected function tearDown(): void {
-		$manager = Server::get(Manager::class);
-		foreach ($manager->list(new ShareAccessContext(force: true), null, null, null) as $share) {
-			$manager->delete(new ShareAccessContext(force: true), $share->id);
+		foreach ($this->manager->list(new ShareAccessContext(force: true), null, null, null) as $share) {
+			$this->manager->delete(new ShareAccessContext(force: true), $share->id);
 		}
 
 		$this->registry->clear();
@@ -186,8 +184,7 @@ abstract class AbstractApiTests extends TestCase {
 	public function testGetShare(): void {
 		$this->register();
 
-		$data = $this->getShareData();
-		$data['id'] = Server::get(ISnowflakeGenerator::class)->nextId();
+		$data = $this->manager->completePartialShareData($this->getShareData());
 		$this->manager->insert(Share::fromArray($data));
 
 		$response = $this->getShare($data['id']);
@@ -204,8 +201,7 @@ abstract class AbstractApiTests extends TestCase {
 	public function testDeleteShare(): void {
 		$this->register();
 
-		$data = $this->getShareData();
-		$data['id'] = Server::get(ISnowflakeGenerator::class)->nextId();
+		$data = $this->manager->completePartialShareData($this->getShareData());
 		$this->manager->insert(Share::fromArray($data));
 
 		$this->deleteShare($data['id']);
@@ -223,7 +219,6 @@ abstract class AbstractApiTests extends TestCase {
 		$this->register();
 
 		$data = [
-			'id' => Server::get(ISnowflakeGenerator::class)->nextId(),
 			'owner' => [
 				'user_id' => $this->owner1->getUID(),
 			],
@@ -231,7 +226,9 @@ abstract class AbstractApiTests extends TestCase {
 			'recipients' => [['type' => TestShareRecipientType::class, 'value' => 'recipient1']],
 			'properties' => [TestShareFeature::class => ['key1' => ['key1']]],
 		];
-		Server::get(Manager::class)->insert(Share::fromArray($data));
+		$data = $this->manager->completePartialShareData($data);
+
+		$this->manager->insert(Share::fromArray($data));
 
 		$data['owner'] = ['user_id' => $this->owner2->getUID()];
 		$data['sources'] = [['type' => TestShareSourceType2::class, 'value' => 'source2']];

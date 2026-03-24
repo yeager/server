@@ -27,11 +27,11 @@ class Version1000Date20250929161325 extends SimpleMigrationStep {
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 
-		// TODO: Add last updated timestamp (microseconds) for federation
 		$shareTable = $schema->createTable('sharing_share');
 		$shareTable->addColumn('id', Types::BIGINT);
 		$shareTable->addColumn('owner', Types::TEXT);
 		$shareTable->addColumn('owner_display_name', Types::TEXT, ['notnull' => false]);
+		$shareTable->addColumn('last_updated', Types::BIGINT);
 
 		$sourcesTable = $schema->createTable('sharing_share_sources');
 		$sourcesTable->addColumn('id', Types::BIGINT);

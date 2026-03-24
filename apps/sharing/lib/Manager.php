@@ -28,6 +28,9 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserManager;
+use OCP\Server;
+use OCP\Snowflake\ISnowflakeGenerator;
+use RuntimeException;
 
 // TODO: Add permission model
 // TODO: Add reshares
@@ -35,6 +38,7 @@ use OCP\IUserManager;
 
 /**
  * @psalm-import-type SharingShare from ResponseDefinitions
+ * @psalm-import-type SharingPartialShare from ResponseDefinitions
  */
 class Manager {
 	public function __construct(
@@ -42,6 +46,28 @@ class Manager {
 		private readonly Registry $registry,
 		private readonly IUserManager $userManager,
 	) {
+	}
+
+	/**
+	 * @param SharingPartialShare $share
+	 * @return SharingShare
+	 */
+	public function completePartialShareData(array $share): array {
+		$share['id'] = Server::get(ISnowflakeGenerator::class)->nextId();
+		$share['last_updated'] = $this->generateLastUpdated();
+		return $share;
+	}
+
+	/**
+	 * @return non-negative-int
+	 */
+	private function generateLastUpdated(): int {
+		$time = (int)(microtime(true) * 1000);
+		if ($time < 0) {
+			throw new RuntimeException('Have you invented time travel?');
+		}
+
+		return $time;
 	}
 
 	/**
@@ -114,6 +140,7 @@ class Manager {
 				'id' => $qb->createNamedParameter((int)$share->id, IQueryBuilder::PARAM_INT),
 				'owner' => $qb->createNamedParameter($share->owner->userId),
 				'owner_display_name' => $qb->createNamedParameter($ownerDisplayName),
+				'last_updated' => $qb->createNamedParameter($share->lastUpdated),
 			])
 			->executeStatement();
 
@@ -220,6 +247,7 @@ class Manager {
 			->update('sharing_share')
 			->set('owner', $qb->createNamedParameter($share->owner->userId))
 			->set('owner_display_name', $qb->createNamedParameter($ownerDisplayName))
+			->set('last_updated', $qb->createNamedParameter($this->generateLastUpdated()))
 			->where($qb->expr()->eq('id', $qb->createNamedParameter($share->id)))
 			->executeStatement();
 
@@ -366,6 +394,7 @@ class Manager {
 					's.id',
 					's.owner',
 					's.owner_display_name',
+					's.last_updated',
 				)
 				->from('sharing_share', 's')
 				->orderBy('s.id', 'ASC');
@@ -403,6 +432,7 @@ class Manager {
 						'user_id' => (string)$row['owner'],
 						'display_name' => (string)$row['owner_display_name'],
 					],
+					'last_updated' => (int)$row['last_updated'],
 					'sources' => [],
 					'recipients' => [],
 					'properties' => [],

@@ -43,6 +43,8 @@ use OCA\Sharing\Model\IShareSourceType;
  *
  * @psalm-type SharingShare = SharingPartialShare&array{
  *     id: non-empty-string,
+ *     // Unix time in milliseconds
+ *     last_updated: non-negative-int,
  * }
  *
  * @psalm-type SharingCompatible = array{

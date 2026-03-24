@@ -293,6 +293,7 @@ class ApiV1ControllerTest extends AbstractApiTests {
 		self::loginAsUser($this->owner1->getUID());
 
 		$data['id'] = $id;
+		$data['last_updated'] = $responseData['last_updated'];
 		$data['properties'] = [TestShareFeatureFilter::class => ['filtered' => ['true']]];
 		$response = $this->controller->updateShare($id, $data);
 		/** @var SharingShare $responseData */

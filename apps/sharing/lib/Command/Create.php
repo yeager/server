@@ -14,8 +14,6 @@ use OCA\Sharing\Manager;
 use OCA\Sharing\Model\Share;
 use OCA\Sharing\Model\ShareAccessContext;
 use OCA\Sharing\ResponseDefinitions;
-use OCP\Server;
-use OCP\Snowflake\ISnowflakeGenerator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -41,8 +39,7 @@ class Create extends Command {
 	public function execute(InputInterface $input, OutputInterface $output): int {
 		/** @var SharingPartialShare $data */
 		$data = json_decode((string)$input->getArgument('data'), true, 512, JSON_THROW_ON_ERROR);
-		$data['id'] = Server::get(ISnowflakeGenerator::class)->nextId();
-		$share = Share::fromArray($data);
+		$share = Share::fromArray($this->manager->completePartialShareData($data));
 
 		try {
 			$this->manager->insert($share);
